@@ -1,9 +1,293 @@
-{
-	"folders": [
-		{
-			"uri": "vscode-remote://codespaces+friendly-broccoli-9p45ppr5r65f76pg/workspaces/projetos.java"
-		}
-	],
-	"remoteAuthority": "codespaces+friendly-broccoli-9p45ppr5r65f76pg",
-	"settings": {}
+import java.io.*;
+import java.util.Scanner;
+
+class Conta {
+    String numeroConta;
+    float saldo;
+    String nome;
+    String cpf;
+    String telefone;
+    int status; // 1 - ativo, 0 - deletado
+}
+
+public class main {
+    public static void main(String[] args) {
+        File arquivo = new File("cadastro_contas.bin");
+
+        try (ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(arquivo, true));
+             ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream(arquivo))) {
+
+            Scanner scanner = new Scanner(System.in);
+            int opcao;
+            String numeroConta;
+            do {
+                System.out.println("\n1 - Cadastrar Conta");
+                System.out.println("2 - Consultar Saldo");
+                System.out.println("3 - Fazer Depósito");
+                System.out.println("4 - Fazer Saque");
+                System.out.println("5 - Exibir Contas");
+                System.out.println("6 - Remover Conta");
+                System.out.println("0 - Sair");
+                System.out.print("Escolha a opção: ");
+                opcao = scanner.nextInt();
+                scanner.nextLine(); // Clear buffer
+
+                switch (opcao) {
+                    case 1:
+                        System.out.print("Digite o número da conta: ");
+                        numeroConta = scanner.nextLine();
+                        cadastrarConta(outputStream, inputStream, numeroConta);
+                        break;
+                    case 2:
+                        System.out.print("Digite o número da conta: ");
+                        numeroConta = scanner.nextLine();
+                        consultarSaldo(inputStream, numeroConta);
+                        break;
+                    case 3:
+                        System.out.print("Digite o número da conta: ");
+                        numeroConta = scanner.nextLine();
+                        fazerDeposito(outputStream, inputStream, numeroConta);
+                        break;
+                    case 4:
+                        System.out.print("Digite o número da conta: ");
+                        numeroConta = scanner.nextLine();
+                        fazerSaque(outputStream, inputStream, numeroConta);
+                        break;
+                    case 5:
+                        exibirContas(inputStream);
+                        break;
+                    case 6:
+                        System.out.print("Digite o número da conta: ");
+                        numeroConta = scanner.nextLine();
+                        removerConta(outputStream, inputStream, numeroConta);
+                        break;
+                    case 0:
+                        limparCadastro(outputStream);
+                        break;
+                    default:
+                        System.out.println("Opção inválida. Tente novamente.");
+                }
+            } while (opcao != 0);
+
+            scanner.close();
+
+        } catch (IOException e) {
+            System.out.println("Erro ao abrir o arquivo.");
+            e.printStackTrace();
+        }
+    }
+
+    static int buscaConta(ObjectInputStream inputStream, String numeroConta) throws IOException, ClassNotFoundException {
+        inputStream.reset();
+        int posicao = 0;
+        while (true) {
+            try {
+                Conta conta = (Conta) inputStream.readObject();
+                if (conta.numeroConta.equals(numeroConta) && conta.status == 1) {
+                    return posicao;
+                }
+            } catch (EOFException e) {
+                break;
+            }
+            posicao++;
+        }
+        return -1;
+    }
+
+    static void cadastrarConta(ObjectOutputStream outputStream, ObjectInputStream inputStream, String numeroConta) {
+        try {
+            if (buscaConta(inputStream, numeroConta) != -1) {
+                System.out.println("Erro: Conta já cadastrada. Não é possível cadastrar novamente.");
+                return;
+            }
+
+            Conta novaConta = new Conta();
+            novaConta.numeroConta = numeroConta;
+            novaConta.status = 1;
+            novaConta.saldo = 0.0f;
+
+            Scanner scanner = new Scanner(System.in);
+            System.out.print("Digite o saldo da conta: ");
+            novaConta.saldo = scanner.nextFloat();
+            scanner.nextLine(); // Clear buffer
+
+            System.out.print("Digite o nome do titular: ");
+            novaConta.nome = scanner.nextLine();
+
+            System.out.print("Digite o CPF do titular: ");
+            novaConta.cpf = scanner.nextLine();
+
+            System.out.print("Digite o telefone de contato: ");
+            novaConta.telefone = scanner.nextLine();
+
+            outputStream.writeObject(novaConta);
+            outputStream.flush();
+            System.out.println("Conta cadastrada com sucesso!");
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Erro ao cadastrar a conta. Por favor, tente novamente.");
+            e.printStackTrace();
+        }
+    }
+
+    static void consultarSaldo(ObjectInputStream inputStream, String numeroConta) {
+        try {
+            int posicao = buscaConta(inputStream, numeroConta);
+            if (posicao == -1) {
+                System.out.println("Conta não encontrada.");
+                return;
+            }
+
+            inputStream.reset();
+            for (int i = 0; i < posicao; i++) {
+                inputStream.readObject();
+            }
+            Conta conta = (Conta) inputStream.readObject();
+            System.out.printf("Saldo da conta %s: %.2f%n", conta.numeroConta, conta.saldo);
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Erro ao consultar o saldo. Por favor, tente novamente.");
+            e.printStackTrace();
+        }
+    }
+
+    static void fazerDeposito(ObjectOutputStream outputStream, ObjectInputStream inputStream, String numeroConta) {
+        try {
+            int posicao = buscaConta(inputStream, numeroConta);
+            if (posicao == -1) {
+                System.out.println("Conta não encontrada.");
+                return;
+            }
+
+            inputStream.reset();
+            for (int i = 0; i < posicao; i++) {
+                inputStream.readObject();
+            }
+            Conta conta = (Conta) inputStream.readObject();
+
+            Scanner scanner = new Scanner(System.in);
+            System.out.print("Digite o valor do depósito: ");
+            float valor = scanner.nextFloat();
+            scanner.nextLine(); // Clear buffer
+
+            conta.saldo += valor;
+            outputStream.writeObject(conta);
+            outputStream.flush();
+            System.out.println("Depósito realizado com sucesso!");
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Erro ao fazer depósito. Por favor, tente novamente.");
+            e.printStackTrace();
+        }
+    }
+
+    static void fazerSaque(ObjectOutputStream outputStream, ObjectInputStream inputStream, String numeroConta) {
+        try {
+            int posicao = buscaConta(inputStream, numeroConta);
+            if (posicao == -1) {
+                System.out.println("Conta não encontrada.");
+                return;
+            }
+
+            inputStream.reset();
+            for (int i = 0; i < posicao; i++) {
+                inputStream.readObject();
+            }
+            Conta conta = (Conta) inputStream.readObject();
+
+            Scanner scanner = new Scanner(System.in);
+            System.out.print("Digite o valor do saque: ");
+            float valor = scanner.nextFloat();
+            scanner.nextLine(); // Clear buffer
+
+            if (valor > conta.saldo) {
+                System.out.println("Saldo insuficiente para realizar o saque.");
+                return;
+            }
+
+            conta.saldo -= valor;
+            outputStream.writeObject(conta);
+            outputStream.flush();
+            System.out.println("Saque realizado com sucesso!");
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Erro ao fazer saque. Por favor, tente novamente.");
+            e.printStackTrace();
+        }
+    }
+
+    static void exibirContas(ObjectInputStream inputStream) {
+        try {
+            inputStream.reset();
+            System.out.println
+("\nLista de Contas:");
+            System.out.printf("%-20s %-15s %-100s %-15s %-15s %-10s%n",
+                    "Número da Conta", "Status", "Nome", "CPF",
+                    "Telefone", "Saldo");
+            while (true) {
+                try {
+                    Conta conta = (Conta) inputStream.readObject();
+                    System.out.printf("%-20s %-15s %-100s %-15s %-15s %.2f%n",
+                            conta.numeroConta,
+                            (conta.status == 1) ? "Ativo" : "Deletado",
+                            conta.nome,
+                            conta.cpf,
+                            conta.telefone,
+                            conta.saldo);
+                } catch (EOFException e) {
+                    break;
+                }
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Erro ao exibir as contas. Por favor, tente novamente.");
+            e.printStackTrace();
+        }
+    }
+
+    static void removerConta(ObjectOutputStream outputStream, ObjectInputStream inputStream, String numeroConta) {
+        try {
+            int posicao = buscaConta(inputStream, numeroConta);
+            if (posicao == -1) {
+                System.out.println("Conta não encontrada.");
+                return;
+            }
+
+            inputStream.reset();
+            for (int i = 0; i < posicao; i++) {
+                outputStream.writeObject(inputStream.readObject());
+            }
+            Conta conta = (Conta) inputStream.readObject();
+            conta.status = 0; // Marcando como deletado
+            outputStream.writeObject(conta);
+
+            while (true) {
+                try {
+                    outputStream.writeObject(inputStream.readObject());
+                } catch (EOFException e) {
+                    break;
+                }
+            }
+            outputStream.flush();
+            System.out.println("Conta removida com sucesso!");
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Erro ao remover a conta. Por favor, tente novamente.");
+            e.printStackTrace();
+        }
+    }
+
+    static void limparCadastro(ObjectOutputStream outputStream) {
+        try {
+            outputStream.close();
+            File arquivo = new File("cadastro_contas.bin");
+            if (!arquivo.delete()) {
+                System.out.println("Erro ao limpar o cadastro.");
+                return;
+            }
+            if (!arquivo.createNewFile()) {
+                System.out.println("Erro ao limpar o cadastro.");
+                return;
+            }
+            outputStream = new ObjectOutputStream(new FileOutputStream(arquivo, true));
+            System.out.println("Cadastro de contas limpo.");
+        } catch (IOException e) {
+            System.out.println("Erro ao limpar o cadastro. Por favor, tente novamente.");
+            e.printStackTrace();
+        }
+    }
 }
