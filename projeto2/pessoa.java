@@ -73,7 +73,67 @@ public class Pessoa {
         System.out.println("Telefone: " + telefone);
     }
 
-    void menu(Scanner scan) {
-        // Adicione aqui o código do menu, se necessário
+    void menu(Scanner scan) { //na verdade esse menu seria opicional para a Funcionalidade do código.
+        int opcao;
+        do {
+            System.out.println("----- Menu -----");
+            System.out.println("1. Visualizar informações");
+            System.out.println("2. Alterar informações");
+            System.out.println("0. Sair");
+            System.out.print("Escolha uma opção: ");
+            opcao = scan.nextInt();
+    
+            switch (opcao) {
+                case 1:
+                    get_info();
+                    break;
+                case 2:
+                    alterar_informacoes(scan);
+                    break;
+                case 0:
+                    System.out.println("Saindo do menu...");
+                    break;
+                default:
+                    System.out.println("Opção inválida. Tente novamente.");
+            }
+        } while (opcao != 0);
     }
+    
+    void alterar_informacoes(Scanner scan) {
+        System.out.println("Selecione o que deseja alterar:");
+        System.out.println("1. Nome");
+        System.out.println("2. Endereço");
+        System.out.println("3. Telefone");
+        System.out.println("0. Voltar");
+    
+        int opcao = scan.nextInt();
+        scan.nextLine(); // Consumir a quebra de linha pendente
+    
+        switch (opcao) {
+            case 1:
+                System.out.print("Novo nome: ");
+                String novoNome = scan.nextLine();
+                setNome(novoNome);
+                System.out.println("Nome alterado com sucesso!");
+                break;
+            case 2:
+                System.out.print("Novo endereço: ");
+                String novoEndereco = scan.nextLine();
+                setEndereco(novoEndereco);
+                System.out.println("Endereço alterado com sucesso!");
+                break;
+            case 3:
+                System.out.print("Novo telefone: ");
+                String novoTelefone = scan.nextLine();
+                setTelefone(novoTelefone);
+                System.out.println("Telefone alterado com sucesso!");
+                break;
+            case 0:
+                System.out.println("Voltando ao menu principal...");
+                break;
+            default:
+                System.out.println("Opção inválida. Tente novamente.");
+        }
+    }
+
 }
